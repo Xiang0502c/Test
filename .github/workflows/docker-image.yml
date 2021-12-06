@@ -1,0 +1,47 @@
+# 工作流程的名稱
+name: Docker Image CI
+
+# 觸發條件：當branch觸發push（push，merge Pull Request），且 tag 為 image.xxx 時觸發工作流。
+on:
+  push:
+    tags: image.*
+    
+# 工作流程，可包含多個作業
+jobs:
+
+  # 作業1名稱
+  build:
+    # 指定的執行器環境
+    runs-on: ubuntu-latest
+    
+    # 作業包含一系列任務，稱為 steps
+    steps:
+      # 檢出當前程式碼（觸發工作流時的commits）
+      - name: Checkout
+        uses: actions/checkout@v2
+        
+      # setup-qemu 如果您想使用 QEMU 新增模擬支援以便能夠針對更多平臺進行構建，則 action 會很有用
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+        
+      # setup-buildxaction 將預設使用docker-container 構建器驅動程式建立和引導構建器。非必需
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      
+      # 登入到阿里雲容器映象服務
+      - name: Login to Ali Docker
+        uses: docker/login-action@v1
+        # 配置登入資訊，secrets 變數在 github settings -> secrets 中設定
+        with:
+          registry: ${{ secrets.ALI_DOCKER_HUB_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_HUB_USN }}
+          password: ${{ secrets.ALI_DOCKER_HUB_PWD }}
+
+      # 構建映象並上傳到阿里雲容器映象倉庫 (自行百度建立自己的映象倉庫)
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          push: true
+          tags: registry.cn-shenzhen.aliyuncs.com/xxxx/image-name:v1
